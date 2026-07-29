@@ -20,8 +20,7 @@ enum TaskStatus: String, Codable, CaseIterable, Identifiable {
     var primaryActionDestination: TaskStatus {
         switch self {
         case .backlog, .done: .todo
-        case .todo: .inProgress
-        case .inProgress: .done
+        case .todo, .inProgress: .done
         }
     }
 
@@ -37,16 +36,15 @@ enum TaskStatus: String, Codable, CaseIterable, Identifiable {
     var primaryActionTitle: String {
         switch self {
         case .backlog: "Move to To do"
-        case .todo: "Move to In Progress"
-        case .inProgress: "Mark done"
-        case .done: "Restore to To do"
+        case .todo, .inProgress: "Mark done"
+        case .done: "Move back to To do"
         }
     }
 
     var doubleClickTitle: String {
         switch self {
         case .backlog: "Double-click to move to To do"
-        case .todo: "Double-click to move to In Progress"
+        case .todo: "Double-click to start"
         case .inProgress: "Double-click to move back to To do"
         case .done: title
         }

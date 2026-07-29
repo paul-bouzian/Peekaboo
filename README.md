@@ -77,15 +77,11 @@ Usage Information** in App Store Connect:
 
 ## Interactions
 
-- Click or tap the priority-colored circle to advance one workflow step:
-  Backlog → To do → In Progress → Done.
-- Click or tap the circle on a Done task to restore it to To do.
-- As a shortcut, double-click a To do task on Mac (or double-tap its title on
-  iPhone) to move it to In Progress.
-- Double-click an In Progress task on Mac (or double-tap its title on iPhone)
-  to move it back to To do.
-- Double-click a Backlog idea on Mac (or double-tap its title on iPhone) to
-  promote it to To do.
+- Double-click a To do task to move it to In Progress.
+- Double-click an In Progress task to move it back to To do.
+- Click or double-click a Backlog idea to promote it to To do.
+- Click the priority-colored circle to complete a task.
+- Click the circle on a completed task to restore it.
 - Drag tasks to reorder them within the same status and priority group.
 - On iPhone, use the three-line handle to drag a task directly into another
   status section or onto another task.

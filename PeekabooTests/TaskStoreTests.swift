@@ -535,43 +535,15 @@ final class TaskStoreTests: XCTestCase {
     }
 
     @MainActor
-    func testPrimaryActionMovesTodoTaskToInProgress() throws {
+    func testPrimaryActionReturnsDoneTaskToTodo() throws {
         let store = try makeTestStore()
-        let task = try XCTUnwrap(store.create(title: "Start me"))
+        let task = try XCTUnwrap(store.create(title: "Toggle me"))
 
-        XCTAssertTrue(store.performPrimaryAction(task))
-        XCTAssertEqual(task.status, .inProgress)
-        XCTAssertNil(task.completedAt)
-    }
-
-    @MainActor
-    func testPrimaryActionMovesInProgressTaskToDone() throws {
-        let completionDate = Date(timeIntervalSince1970: 2_000)
-        let store = try makeTestStore(now: { completionDate })
-        let task = try XCTUnwrap(store.create(title: "Finish me", status: .inProgress))
-
-        XCTAssertTrue(store.performPrimaryAction(task))
+        store.performPrimaryAction(task)
         XCTAssertEqual(task.status, .done)
-        XCTAssertEqual(task.completedAt, completionDate)
-    }
-
-    @MainActor
-    func testPrimaryActionRestoresDoneTaskToTodo() throws {
-        let store = try makeTestStore()
-        let task = try XCTUnwrap(store.create(title: "Restore me", status: .done))
         XCTAssertNotNil(task.completedAt)
 
-        XCTAssertTrue(store.performPrimaryAction(task))
-        XCTAssertEqual(task.status, .todo)
-        XCTAssertNil(task.completedAt)
-    }
-
-    @MainActor
-    func testPrimaryActionMovesBacklogTaskToTodo() throws {
-        let store = try makeTestStore()
-        let task = try XCTUnwrap(store.create(title: "Promote me", status: .backlog))
-
-        XCTAssertTrue(store.performPrimaryAction(task))
+        store.performPrimaryAction(task)
         XCTAssertEqual(task.status, .todo)
         XCTAssertNil(task.completedAt)
     }
@@ -605,6 +577,11 @@ final class TaskStoreTests: XCTestCase {
         XCTAssertEqual(idea.priority, .high)
         XCTAssertEqual(store.orderedTasks(for: .backlog).map(\.id), [idea.id])
 
+        store.performPrimaryAction(idea)
+        XCTAssertEqual(idea.status, .todo)
+        XCTAssertNil(idea.completedAt)
+
+        store.setStatus(.backlog, for: idea)
         store.performDoubleClickAction(idea)
         XCTAssertEqual(idea.status, .todo)
     }
