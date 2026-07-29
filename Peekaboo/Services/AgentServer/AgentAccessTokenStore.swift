@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 struct AgentAccessTokenStore {
-    private let service = "com.emanueledipietro.Peekaboo.agent-access"
+    private let service = "com.paulbouzian.Peekaboo.agent-access"
     private let account = "mcp-bearer-token"
 
     func loadOrCreate() -> String {

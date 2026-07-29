@@ -73,6 +73,23 @@ final class AppCoordinator {
             }
         }
 
+        if !isUITesting && !isRunningTests {
+            do {
+                let migratedCount = try LegacyTaskImporter.importIfPresent(into: container)
+                if migratedCount > 0 {
+                    NSLog(
+                        "Imported %ld legacy task(s) into the CloudKit-backed store",
+                        migratedCount
+                    )
+                }
+            } catch {
+                let nsError = error as NSError
+                let diagnostic = "\(nsError.domain) (\(nsError.code)): \(nsError.userInfo)"
+                NSLog("Legacy task migration failed: %@", diagnostic)
+                settings.reportCloudSyncStartupFailure(diagnostic)
+            }
+        }
+
         let store = TaskStore(container: container)
         let uiState = PanelUIState()
         let loginItemService = LoginItemService()

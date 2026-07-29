@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 struct TaskDragPayload: Sendable {
     static let internalTaskType = UTType(
-        exportedAs: "com.emanueledipietro.peekaboo.task-id"
+        exportedAs: "com.paulbouzian.peekaboo.task-id"
     )
 
     let taskID: UUID?

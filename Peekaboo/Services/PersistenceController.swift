@@ -9,7 +9,7 @@ enum PeekabooCloudKitEnvironment: String {
 }
 
 enum PersistenceController {
-    static let cloudKitContainerIdentifier = "iCloud.com.emanueledipietro.Peekaboo"
+    static let cloudKitContainerIdentifier = "iCloud.com.paulbouzian.Peekaboo"
     private static let cloudKitEnvironmentInfoKey = "PeekabooCloudKitEnvironment"
 
     static var isCloudSyncEntitled: Bool {

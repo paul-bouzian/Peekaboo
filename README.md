@@ -36,7 +36,7 @@ On Mac, Peekaboo lives in the menu bar and reveals a lightweight panel when the 
 1. Clone the repository.
 2. Open `Peekaboo.xcodeproj` in Xcode.
 3. Select both the `Peekaboo` and `PeekabooMobile` targets and choose your development team under Signing & Capabilities.
-4. Change the bundle identifier if your Apple developer account does not own `com.emanueledipietro.Peekaboo`.
+4. The fork is configured for Paul Bouzian's Apple Developer team and bundle identifier `com.paulbouzian.Peekaboo`.
 5. Run the `Peekaboo` scheme for Mac or `PeekabooMobile` for iPhone.
 
 Choose a corner and reveal delay in Settings. Press `Control–Option–Space` from anywhere in macOS to reveal Peekaboo with the new-task field focused.
@@ -44,10 +44,10 @@ Press `Command–,` while Peekaboo is focused to open Settings.
 
 ## iCloud and iPhone setup
 
-Both app targets use the explicit CloudKit container `iCloud.com.emanueledipietro.Peekaboo`. Before running a device build:
+Both app targets use the explicit CloudKit container `iCloud.com.paulbouzian.Peekaboo`. Before running a device build:
 
 1. In Xcode, confirm that both targets use the same Apple development team and have iCloud/CloudKit plus remote-notification capabilities.
-2. Create or select `iCloud.com.emanueledipietro.Peekaboo` for both targets. If you change the container identifier, also update `PersistenceController.cloudKitContainerIdentifier` and both entitlement files.
+2. Create or select `iCloud.com.paulbouzian.Peekaboo` for both targets. If you change the container identifier, also update `PersistenceController.cloudKitContainerIdentifier` and all entitlement files.
 3. Sign in to the same iCloud account on the Mac and iPhone. Each app keeps a local SwiftData replica, so edits remain available offline and synchronize when CloudKit becomes available.
 4. After the first Development sync, inspect the generated `CD_TaskItem` type in CloudKit Console. Deploy the schema to Production before TestFlight, App Store or production distribution.
 
@@ -90,7 +90,7 @@ Usage Information** in App Store Connect:
 
 ## Agent access (MCP)
 
-When Agent access is explicitly enabled, Peekaboo serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP at `http://127.0.0.1:7335/mcp`, loopback only. The feature is disabled by default and every request must include the random bearer token shown under Settings → Agent access. Authorized clients such as Claude Code, Synara, Codex or Cursor can list, create, update, complete and delete tasks, and every change appears live in the panel. Change the port with `defaults write com.emanueledipietro.Peekaboo agentServerPort <port>`.
+When Agent access is explicitly enabled, Peekaboo serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP at `http://127.0.0.1:7335/mcp`, loopback only. The feature is disabled by default and every request must include the random bearer token shown under Settings → Agent access. Authorized clients such as Claude Code, Synara, Codex or Cursor can list, create, update, complete and delete tasks, and every change appears live in the panel. Change the port with `defaults write com.paulbouzian.Peekaboo agentServerPort <port>`.
 
 Settings also provides **Copy setup prompt**, which creates a client-aware prompt containing the local endpoint and private bearer token. Paste it into Codex, Synara, or Claude to have that client configure or repair only its `peekaboo` MCP entry and verify the connection.
 
