@@ -24,6 +24,7 @@ actor LegacyTaskImporter {
     typealias ArchivePayload = @Sendable (URL, URL) throws -> Void
 
     static let pendingFileName = "legacy-tasks.json"
+    static let quarantineFilePrefix = "legacy-tasks-quarantined-"
     private static let processingFileName = "legacy-tasks-processing.json"
 
     func importIfPresent() throws -> LegacyTaskImportResult? {
@@ -62,6 +63,44 @@ actor LegacyTaskImporter {
             try FileManager.default.moveItem(at: source, to: destination)
         }
     ) throws -> LegacyTaskImportResult {
+        let payloadRecords: [LegacyTaskRecord]
+        let records: [LegacyTaskRecord]
+        let changedTaskCount: Int
+        do {
+            (payloadRecords, records, changedTaskCount) = try importPayload(
+                from: payloadURL
+            )
+        } catch {
+            quarantine(payloadURL)
+            throw error
+        }
+
+        let archiveURL = payloadURL
+            .deletingLastPathComponent()
+            .appendingPathComponent(
+                "legacy-tasks-imported-\(UUID().uuidString).json"
+            )
+        let archiveWarning: String?
+        do {
+            try archivePayload(payloadURL, archiveURL)
+            archiveWarning = nil
+        } catch {
+            let nsError = error as NSError
+            archiveWarning = "\(nsError.domain) (\(nsError.code)): "
+                + nsError.localizedDescription
+        }
+
+        return LegacyTaskImportResult(
+            payloadRecordCount: payloadRecords.count,
+            uniqueRecordCount: records.count,
+            changedTaskCount: changedTaskCount,
+            archiveWarning: archiveWarning
+        )
+    }
+
+    private func importPayload(
+        from payloadURL: URL
+    ) throws -> ([LegacyTaskRecord], [LegacyTaskRecord], Int) {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970
         let payloadRecords = try decoder.decode(
@@ -95,27 +134,27 @@ actor LegacyTaskImporter {
             try modelContext.save()
         }
 
-        let archiveURL = payloadURL
+        return (payloadRecords, records, changedTaskCount)
+    }
+
+    private func quarantine(_ payloadURL: URL) {
+        let quarantineURL = payloadURL
             .deletingLastPathComponent()
             .appendingPathComponent(
-                "legacy-tasks-imported-\(UUID().uuidString).json"
+                "\(Self.quarantineFilePrefix)\(UUID().uuidString).json"
             )
-        let archiveWarning: String?
         do {
-            try archivePayload(payloadURL, archiveURL)
-            archiveWarning = nil
+            try FileManager.default.moveItem(
+                at: payloadURL,
+                to: quarantineURL
+            )
         } catch {
             let nsError = error as NSError
-            archiveWarning = "\(nsError.domain) (\(nsError.code)): "
-                + nsError.localizedDescription
+            NSLog(
+                "Unable to quarantine failed legacy migration payload: %@",
+                "\(nsError.domain) (\(nsError.code)): \(nsError.userInfo)"
+            )
         }
-
-        return LegacyTaskImportResult(
-            payloadRecordCount: payloadRecords.count,
-            uniqueRecordCount: records.count,
-            changedTaskCount: changedTaskCount,
-            archiveWarning: archiveWarning
-        )
     }
 
     private func deduplicated(

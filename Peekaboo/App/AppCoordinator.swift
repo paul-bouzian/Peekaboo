@@ -53,7 +53,7 @@ final class AppCoordinator {
                 cloudSyncEnabled: cloudSyncEnabled
             )
             if !cloudSyncEnabled && !isUITesting && !isRunningTests {
-                settings.reportCloudSyncStartupFailure(
+                settings.reportLocalOnlyCloudSync(
                     "This build is not entitled for CloudKit. "
                         + "Peekaboo is running with local storage only."
                 )

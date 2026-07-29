@@ -46,6 +46,22 @@ final class TaskStoreTests: XCTestCase {
     }
 
     @MainActor
+    func testLocalOnlyCloudSyncUsesInformationalChannel() {
+        let suiteName = "PeekabooTests.CloudSyncInfo.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let settings = AppSettings(defaults: defaults)
+
+        settings.reportLocalOnlyCloudSync("Local storage only")
+
+        XCTAssertEqual(
+            settings.cloudSyncStartupInfoMessage,
+            "Local storage only"
+        )
+        XCTAssertNil(settings.cloudSyncStartupErrorMessage)
+    }
+
+    @MainActor
     func testAgentAccessRequiresExplicitOptInOnlyOnce() {
         let suiteName = "PeekabooTests.AgentAccess.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!

@@ -139,6 +139,39 @@ final class LegacyTaskImporterTests: XCTestCase {
         XCTAssertEqual(tasks.first?.id, id)
     }
 
+    func testMalformedPayloadIsQuarantined() async throws {
+        let container = try makeContainer()
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString,
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let payloadURL = directory.appendingPathComponent(
+            LegacyTaskImporter.pendingFileName
+        )
+        try Data("not-json".utf8).write(to: payloadURL)
+        let importer = LegacyTaskImporter(modelContainer: container)
+
+        do {
+            _ = try await importer.importTasks(from: payloadURL)
+            XCTFail("Expected malformed JSON to fail")
+        } catch {
+            XCTAssertTrue(error is DecodingError)
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: payloadURL.path))
+        let quarantined = try FileManager.default.contentsOfDirectory(
+            atPath: directory.path
+        ).filter {
+            $0.hasPrefix(LegacyTaskImporter.quarantineFilePrefix)
+        }
+        XCTAssertEqual(quarantined.count, 1)
+    }
+
     private func makeContainer() throws -> ModelContainer {
         try ModelContainer(
             for: TaskItem.self,
