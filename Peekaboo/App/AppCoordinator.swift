@@ -73,23 +73,6 @@ final class AppCoordinator {
             }
         }
 
-        if !isUITesting && !isRunningTests {
-            do {
-                let migratedCount = try LegacyTaskImporter.importIfPresent(into: container)
-                if migratedCount > 0 {
-                    NSLog(
-                        "Imported %ld legacy task(s) into the CloudKit-backed store",
-                        migratedCount
-                    )
-                }
-            } catch {
-                let nsError = error as NSError
-                let diagnostic = "\(nsError.domain) (\(nsError.code)): \(nsError.userInfo)"
-                NSLog("Legacy task migration failed: %@", diagnostic)
-                settings.reportCloudSyncStartupFailure(diagnostic)
-            }
-        }
-
         let store = TaskStore(container: container)
         let uiState = PanelUIState()
         let loginItemService = LoginItemService()
@@ -122,6 +105,39 @@ final class AppCoordinator {
             uiState: uiState,
             store: store
         )
+
+        if !isUITesting && !isRunningTests {
+            let importer = LegacyTaskImporter(modelContainer: container)
+            Task { [settings, store] in
+                do {
+                    guard let result = try await importer.importIfPresent() else {
+                        return
+                    }
+                    if result.changedTaskCount > 0 {
+                        store.refresh()
+                        NSLog(
+                            "Imported %ld of %ld legacy task(s) into the "
+                                + "CloudKit-backed store",
+                            result.changedTaskCount,
+                            result.uniqueRecordCount
+                        )
+                    }
+                    if let archiveWarning = result.archiveWarning {
+                        NSLog(
+                            "Legacy task migration completed, but its payload "
+                                + "could not be archived: %@",
+                            archiveWarning
+                        )
+                    }
+                } catch {
+                    let nsError = error as NSError
+                    let diagnostic = "\(nsError.domain) (\(nsError.code)): "
+                        + "\(nsError.userInfo)"
+                    NSLog("Legacy task migration failed: %@", diagnostic)
+                    settings.reportCloudSyncStartupFailure(diagnostic)
+                }
+            }
+        }
     }
 
     func start() {

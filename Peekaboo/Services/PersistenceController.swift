@@ -12,8 +12,8 @@ enum PersistenceController {
     static let cloudKitContainerIdentifier = "iCloud.com.paulbouzian.Peekaboo"
     private static let cloudKitEnvironmentInfoKey = "PeekabooCloudKitEnvironment"
 
+    #if os(macOS)
     static var isCloudSyncEntitled: Bool {
-        #if os(macOS)
         guard let task = SecTaskCreateFromSelf(nil) else { return false }
         let containers = SecTaskCopyValueForEntitlement(
             task,
@@ -26,10 +26,8 @@ enum PersistenceController {
             nil
         ) as? [String]
         return supportsCloudSync(containers: containers, services: services)
-        #else
-        return true
-        #endif
     }
+    #endif
 
     static func supportsCloudSync(
         containers: [String]?,

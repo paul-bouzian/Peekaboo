@@ -4,6 +4,47 @@ import UniformTypeIdentifiers
 @testable import Peekaboo
 
 final class TaskStoreTests: XCTestCase {
+    func testAgentAccessTokenMigratesLegacyKeychainService() {
+        let legacyToken = "legacy-token"
+        var tokens = [
+            AgentAccessTokenStore.legacyServices[0]: legacyToken
+        ]
+        let store = AgentAccessTokenStore(
+            readToken: { service, _ in tokens[service] },
+            storeToken: { service, _, token in
+                tokens[service] = token
+                return true
+            }
+        )
+
+        XCTAssertEqual(store.loadOrCreate(), legacyToken)
+        XCTAssertEqual(tokens[AgentAccessTokenStore.service], legacyToken)
+    }
+
+    func testAgentAccessTokenPrefersCurrentKeychainService() {
+        let currentToken = "current-token"
+        var storedServices: [String] = []
+        let store = AgentAccessTokenStore(
+            readToken: { service, _ in
+                switch service {
+                case AgentAccessTokenStore.service:
+                    currentToken
+                case AgentAccessTokenStore.legacyServices[0]:
+                    "legacy-token"
+                default:
+                    nil
+                }
+            },
+            storeToken: { service, _, _ in
+                storedServices.append(service)
+                return true
+            }
+        )
+
+        XCTAssertEqual(store.loadOrCreate(), currentToken)
+        XCTAssertTrue(storedServices.isEmpty)
+    }
+
     @MainActor
     func testAgentAccessRequiresExplicitOptInOnlyOnce() {
         let suiteName = "PeekabooTests.AgentAccess.\(UUID().uuidString)"

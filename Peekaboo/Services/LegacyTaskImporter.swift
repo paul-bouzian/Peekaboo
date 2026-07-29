@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-struct LegacyTaskRecord: Codable {
+struct LegacyTaskRecord: Codable, Sendable {
     let id: UUID
     let title: String
     let statusRaw: String
@@ -12,14 +12,22 @@ struct LegacyTaskRecord: Codable {
     let manualOrder: Int64?
 }
 
-@MainActor
-enum LegacyTaskImporter {
-    static let pendingFileName = "legacy-tasks.json"
+struct LegacyTaskImportResult: Sendable {
+    let payloadRecordCount: Int
+    let uniqueRecordCount: Int
+    let changedTaskCount: Int
+    let archiveWarning: String?
+}
 
-    static func importIfPresent(
-        into container: ModelContainer,
-        fileManager: FileManager = .default
-    ) throws -> Int {
+@ModelActor
+actor LegacyTaskImporter {
+    typealias ArchivePayload = @Sendable (URL, URL) throws -> Void
+
+    static let pendingFileName = "legacy-tasks.json"
+    private static let processingFileName = "legacy-tasks-processing.json"
+
+    func importIfPresent() throws -> LegacyTaskImportResult? {
+        let fileManager = FileManager.default
         let applicationSupportURL = try fileManager.url(
             for: .applicationSupportDirectory,
             in: .userDomainMask,
@@ -30,58 +38,124 @@ enum LegacyTaskImporter {
             "Peekaboo",
             isDirectory: true
         )
-        let pendingURL = migrationDirectory.appendingPathComponent(pendingFileName)
-        guard fileManager.fileExists(atPath: pendingURL.path) else { return 0 }
-
-        return try importTasks(
-            from: pendingURL,
-            into: container,
-            fileManager: fileManager
+        let pendingURL = migrationDirectory.appendingPathComponent(Self.pendingFileName)
+        let processingURL = migrationDirectory.appendingPathComponent(
+            Self.processingFileName
         )
+
+        let payloadURL: URL
+        if fileManager.fileExists(atPath: processingURL.path) {
+            payloadURL = processingURL
+        } else if fileManager.fileExists(atPath: pendingURL.path) {
+            try fileManager.moveItem(at: pendingURL, to: processingURL)
+            payloadURL = processingURL
+        } else {
+            return nil
+        }
+
+        return try importTasks(from: payloadURL)
     }
 
-    static func importTasks(
-        from pendingURL: URL,
-        into container: ModelContainer,
-        fileManager: FileManager = .default
-    ) throws -> Int {
+    func importTasks(
+        from payloadURL: URL,
+        archivePayload: ArchivePayload = { source, destination in
+            try FileManager.default.moveItem(at: source, to: destination)
+        }
+    ) throws -> LegacyTaskImportResult {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970
-        let records = try decoder.decode(
+        let payloadRecords = try decoder.decode(
             [LegacyTaskRecord].self,
-            from: Data(contentsOf: pendingURL)
+            from: Data(contentsOf: payloadURL)
         )
+        let records = deduplicated(payloadRecords)
 
-        let context = ModelContext(container)
-        let migratedIDs = Set(records.map(\.id))
-        let existingTasks = try context.fetch(FetchDescriptor<TaskItem>())
-        for task in existingTasks where migratedIDs.contains(task.id) {
-            context.delete(task)
-        }
+        let existingTasks = try modelContext.fetch(FetchDescriptor<TaskItem>())
+        let existingByID = Dictionary(grouping: existingTasks, by: \.id)
+        var changedTaskCount = 0
+
         for record in records {
-            context.insert(
-                TaskItem(
-                    id: record.id,
-                    title: record.title,
-                    status: TaskStatus(rawValue: record.statusRaw) ?? .todo,
-                    priority: TaskPriority(rawValue: record.priorityRaw) ?? .none,
-                    createdAt: record.createdAt,
-                    updatedAt: record.updatedAt,
-                    completedAt: record.completedAt,
-                    manualOrder: record.manualOrder
-                )
-            )
-        }
-        if context.hasChanges {
-            try context.save()
+            guard let replicas = existingByID[record.id], !replicas.isEmpty else {
+                modelContext.insert(TaskItem(record))
+                changedTaskCount += 1
+                continue
+            }
+
+            var changedReplica = false
+            for task in replicas where task.updatedAt < record.updatedAt {
+                task.apply(record)
+                changedReplica = true
+            }
+            if changedReplica {
+                changedTaskCount += 1
+            }
         }
 
-        let archiveURL = pendingURL
+        if modelContext.hasChanges {
+            try modelContext.save()
+        }
+
+        let archiveURL = payloadURL
             .deletingLastPathComponent()
             .appendingPathComponent(
                 "legacy-tasks-imported-\(UUID().uuidString).json"
             )
-        try fileManager.moveItem(at: pendingURL, to: archiveURL)
-        return records.count
+        let archiveWarning: String?
+        do {
+            try archivePayload(payloadURL, archiveURL)
+            archiveWarning = nil
+        } catch {
+            let nsError = error as NSError
+            archiveWarning = "\(nsError.domain) (\(nsError.code)): "
+                + nsError.localizedDescription
+        }
+
+        return LegacyTaskImportResult(
+            payloadRecordCount: payloadRecords.count,
+            uniqueRecordCount: records.count,
+            changedTaskCount: changedTaskCount,
+            archiveWarning: archiveWarning
+        )
+    }
+
+    private func deduplicated(
+        _ records: [LegacyTaskRecord]
+    ) -> [LegacyTaskRecord] {
+        var newestByID: [UUID: LegacyTaskRecord] = [:]
+        for record in records {
+            if let existing = newestByID[record.id],
+               existing.updatedAt >= record.updatedAt {
+                continue
+            }
+            newestByID[record.id] = record
+        }
+        return newestByID.values.sorted {
+            $0.id.uuidString < $1.id.uuidString
+        }
+    }
+}
+
+private extension TaskItem {
+    convenience init(_ record: LegacyTaskRecord) {
+        self.init(
+            id: record.id,
+            title: record.title,
+            status: TaskStatus(rawValue: record.statusRaw) ?? .todo,
+            priority: TaskPriority(rawValue: record.priorityRaw) ?? .none,
+            createdAt: record.createdAt,
+            updatedAt: record.updatedAt,
+            completedAt: record.completedAt,
+            manualOrder: record.manualOrder
+        )
+    }
+
+    func apply(_ record: LegacyTaskRecord) {
+        title = record.title
+        status = TaskStatus(rawValue: record.statusRaw) ?? .todo
+        priority = TaskPriority(rawValue: record.priorityRaw) ?? .none
+        createdAt = record.createdAt
+        updatedAt = record.updatedAt
+        completedAt = record.completedAt
+        manualOrder = record.manualOrder
     }
 }

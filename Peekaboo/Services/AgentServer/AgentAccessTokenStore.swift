@@ -2,12 +2,38 @@ import Foundation
 import Security
 
 struct AgentAccessTokenStore {
-    private let service = "com.paulbouzian.Peekaboo.agent-access"
-    private let account = "mcp-bearer-token"
+    typealias ReadToken = (_ service: String, _ account: String) -> String?
+    typealias StoreToken = (
+        _ service: String,
+        _ account: String,
+        _ token: String
+    ) -> Bool
+
+    static let service = "com.paulbouzian.Peekaboo.agent-access"
+    static let legacyServices = ["com.emanueledipietro.Peekaboo.agent-access"]
+    static let account = "mcp-bearer-token"
+
+    private let readToken: ReadToken
+    private let storeToken: StoreToken
+
+    init(
+        readToken: @escaping ReadToken = Self.readTokenFromKeychain,
+        storeToken: @escaping StoreToken = Self.storeTokenInKeychain
+    ) {
+        self.readToken = readToken
+        self.storeToken = storeToken
+    }
 
     func loadOrCreate() -> String {
-        if let existing = readToken() {
+        if let existing = readToken(Self.service, Self.account) {
             return existing
+        }
+        for legacyService in Self.legacyServices {
+            guard let legacyToken = readToken(legacyService, Self.account) else {
+                continue
+            }
+            _ = storeToken(Self.service, Self.account, legacyToken)
+            return readToken(Self.service, Self.account) ?? legacyToken
         }
 
         var bytes = [UInt8](repeating: 0, count: 32)
@@ -21,23 +47,34 @@ struct AgentAccessTokenStore {
             generated = UUID().uuidString + UUID().uuidString
         }
 
-        let addQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecValueData as String: Data(generated.utf8),
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        ]
-        let status = SecItemAdd(addQuery as CFDictionary, nil)
-        guard status == errSecSuccess || status == errSecDuplicateItem else {
+        guard storeToken(Self.service, Self.account, generated) else {
             // The listener remains protected for this launch even if Keychain
             // persistence is temporarily unavailable.
             return generated
         }
-        return readToken() ?? generated
+        return readToken(Self.service, Self.account) ?? generated
     }
 
-    private func readToken() -> String? {
+    private static func storeTokenInKeychain(
+        service: String,
+        account: String,
+        token: String
+    ) -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecValueData as String: Data(token.utf8),
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        ]
+        let status = SecItemAdd(query as CFDictionary, nil)
+        return status == errSecSuccess || status == errSecDuplicateItem
+    }
+
+    private static func readTokenFromKeychain(
+        service: String,
+        account: String
+    ) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

@@ -20,6 +20,7 @@ struct LegacyStoreMigrator {
         let sourceConfiguration = ModelConfiguration(
             "legacy",
             url: sourceURL,
+            allowsSave: false,
             cloudKitDatabase: .none
         )
         let sourceContainer = try ModelContainer(

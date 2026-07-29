@@ -71,18 +71,47 @@ final class MobileAppModel: ObservableObject {
             let isRunningTests = environment["PEEKABOO_TESTING"] == "1"
                 || environment["XCTestConfigurationFilePath"] != nil
                 || environment["XCTestBundlePath"] != nil
-            shouldCheckICloudStatus = !isRunningTests
+            let cloudSyncEnabled = !isRunningTests
+            shouldCheckICloudStatus = cloudSyncEnabled
             #if DEBUG
-            if !isRunningTests {
-                try PersistenceController.initializeCloudKitDevelopmentSchemaIfNeeded()
+            if cloudSyncEnabled {
+                do {
+                    try PersistenceController.initializeCloudKitDevelopmentSchemaIfNeeded()
+                } catch {
+                    NSLog(
+                        "CloudKit schema initialization failed: %@",
+                        error.localizedDescription
+                    )
+                }
             }
             #endif
-            let container = try PersistenceController.makeContainer(
-                inMemory: isRunningTests
-            )
+            let container: ModelContainer
+            var cloudFallbackError: Error?
+            do {
+                container = try PersistenceController.makeContainer(
+                    inMemory: isRunningTests,
+                    cloudSyncEnabled: cloudSyncEnabled
+                )
+            } catch let cloudError {
+                guard cloudSyncEnabled else { throw cloudError }
+                cloudFallbackError = cloudError
+                shouldCheckICloudStatus = false
+                container = try PersistenceController.makeContainer(
+                    inMemory: isRunningTests,
+                    cloudSyncEnabled: false
+                )
+            }
             self.container = container
             store = TaskStore(container: container)
             startupError = nil
+            if let cloudFallbackError {
+                iCloudAvailability = .unavailable(
+                    "Cloud sync is unavailable: "
+                        + cloudFallbackError.localizedDescription
+                )
+            } else {
+                iCloudAvailability = .checking
+            }
             Task { await refresh() }
         } catch {
             container = nil
