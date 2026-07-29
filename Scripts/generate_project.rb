@@ -108,7 +108,7 @@ end
 
 app.build_configurations.each do |config|
   settings = config.build_settings
-  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.emanueledipietro.Peekaboo'
+  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.paulbouzian.Peekaboo'
   settings['PRODUCT_NAME'] = '$(TARGET_NAME)'
   settings['GENERATE_INFOPLIST_FILE'] = 'NO'
   settings['INFOPLIST_FILE'] = 'Peekaboo/Info.plist'
@@ -118,7 +118,7 @@ app.build_configurations.each do |config|
                                        else 'Peekaboo/Peekaboo.entitlements'
                                        end
   settings['CODE_SIGN_STYLE'] = 'Automatic'
-  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
+  settings['DEVELOPMENT_TEAM'] = '9ZYQ4G954D'
   settings['ENABLE_APP_SANDBOX'] = 'YES'
   settings['ENABLE_HARDENED_RUNTIME'] = 'YES'
   settings['ASSETCATALOG_COMPILER_APPICON_NAME'] = 'AppIcon'
@@ -137,37 +137,37 @@ end
 
 unit_tests.build_configurations.each do |config|
   settings = config.build_settings
-  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.emanueledipietro.PeekabooTests'
+  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.paulbouzian.PeekabooTests'
   settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['SWIFT_VERSION'] = '5.0'
   settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
   settings['CODE_SIGN_STYLE'] = 'Automatic'
-  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
+  settings['DEVELOPMENT_TEAM'] = '9ZYQ4G954D'
   settings['TEST_HOST'] = '$(BUILT_PRODUCTS_DIR)/Peekaboo.app/Contents/MacOS/Peekaboo'
   settings['BUNDLE_LOADER'] = '$(TEST_HOST)'
 end
 
 ui_tests.build_configurations.each do |config|
   settings = config.build_settings
-  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.emanueledipietro.PeekabooUITests'
+  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.paulbouzian.PeekabooUITests'
   settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['SWIFT_VERSION'] = '5.0'
   settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
   settings['CODE_SIGN_STYLE'] = 'Automatic'
-  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
+  settings['DEVELOPMENT_TEAM'] = '9ZYQ4G954D'
   settings['TEST_TARGET_NAME'] = 'Peekaboo'
 end
 
 mobile_app.build_configurations.each do |config|
   settings = config.build_settings
-  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.emanueledipietro.Peekaboo'
+  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.paulbouzian.Peekaboo'
   settings['PRODUCT_NAME'] = '$(TARGET_NAME)'
   settings['PRODUCT_MODULE_NAME'] = 'PeekabooMobile'
   settings['GENERATE_INFOPLIST_FILE'] = 'NO'
   settings['INFOPLIST_FILE'] = 'PeekabooMobile/Info.plist'
   settings['CODE_SIGN_ENTITLEMENTS'] = 'PeekabooMobile/PeekabooMobile.entitlements'
   settings['CODE_SIGN_STYLE'] = 'Automatic'
-  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
+  settings['DEVELOPMENT_TEAM'] = '9ZYQ4G954D'
   settings['ASSETCATALOG_COMPILER_APPICON_NAME'] = 'AppIcon'
   settings['ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME'] = 'AccentColor'
   settings['SWIFT_VERSION'] = '5.0'
@@ -189,12 +189,12 @@ end
 
 mobile_tests.build_configurations.each do |config|
   settings = config.build_settings
-  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.emanueledipietro.PeekabooMobileTests'
+  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.paulbouzian.PeekabooMobileTests'
   settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['SWIFT_VERSION'] = '5.0'
   settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
   settings['CODE_SIGN_STYLE'] = 'Automatic'
-  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
+  settings['DEVELOPMENT_TEAM'] = '9ZYQ4G954D'
   settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
   settings['SDKROOT'] = 'iphoneos'
   settings['SUPPORTED_PLATFORMS'] = 'iphoneos iphonesimulator'
@@ -205,12 +205,12 @@ end
 
 mobile_ui_tests.build_configurations.each do |config|
   settings = config.build_settings
-  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.emanueledipietro.PeekabooMobileUITests'
+  settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.paulbouzian.PeekabooMobileUITests'
   settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['SWIFT_VERSION'] = '5.0'
   settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
   settings['CODE_SIGN_STYLE'] = 'Automatic'
-  settings['DEVELOPMENT_TEAM'] = 'HR24WHR326'
+  settings['DEVELOPMENT_TEAM'] = '9ZYQ4G954D'
   settings['IPHONEOS_DEPLOYMENT_TARGET'] = '17.0'
   settings['SDKROOT'] = 'iphoneos'
   settings['SUPPORTED_PLATFORMS'] = 'iphoneos iphonesimulator'

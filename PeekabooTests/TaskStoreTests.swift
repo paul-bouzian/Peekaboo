@@ -4,6 +4,77 @@ import UniformTypeIdentifiers
 @testable import Peekaboo
 
 final class TaskStoreTests: XCTestCase {
+    func testAgentAccessTokenMigratesLegacyKeychainService() {
+        let legacyToken = "legacy-token"
+        var tokens = [
+            AgentAccessTokenStore.legacyServices[0]: legacyToken
+        ]
+        let store = AgentAccessTokenStore(
+            readToken: { service, _ in tokens[service] },
+            storeToken: { service, _, token in
+                tokens[service] = token
+                return true
+            }
+        )
+
+        XCTAssertEqual(store.loadOrCreate(), legacyToken)
+        XCTAssertEqual(tokens[AgentAccessTokenStore.service], legacyToken)
+    }
+
+    func testAgentAccessTokenPrefersCurrentKeychainService() {
+        let currentToken = "current-token"
+        var storedServices: [String] = []
+        let store = AgentAccessTokenStore(
+            readToken: { service, _ in
+                switch service {
+                case AgentAccessTokenStore.service:
+                    currentToken
+                case AgentAccessTokenStore.legacyServices[0]:
+                    "legacy-token"
+                default:
+                    nil
+                }
+            },
+            storeToken: { service, _, _ in
+                storedServices.append(service)
+                return true
+            }
+        )
+
+        XCTAssertEqual(store.loadOrCreate(), currentToken)
+        XCTAssertTrue(storedServices.isEmpty)
+    }
+
+    @MainActor
+    func testLocalOnlyCloudSyncUsesInformationalChannel() {
+        let suiteName = "PeekabooTests.CloudSyncInfo.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let settings = AppSettings(defaults: defaults)
+
+        settings.reportLocalOnlyCloudSync("Local storage only")
+
+        XCTAssertEqual(
+            settings.cloudSyncStartupInfoMessage,
+            "Local storage only"
+        )
+        XCTAssertNil(settings.cloudSyncStartupErrorMessage)
+
+        settings.reportCloudSyncStartupFailure("CloudKit unavailable")
+        XCTAssertEqual(
+            settings.cloudSyncStartupErrorMessage,
+            "CloudKit unavailable"
+        )
+        XCTAssertNil(settings.cloudSyncStartupInfoMessage)
+
+        settings.reportLocalOnlyCloudSync("Back to local storage")
+        XCTAssertEqual(
+            settings.cloudSyncStartupInfoMessage,
+            "Back to local storage"
+        )
+        XCTAssertNil(settings.cloudSyncStartupErrorMessage)
+    }
+
     @MainActor
     func testAgentAccessRequiresExplicitOptInOnlyOnce() {
         let suiteName = "PeekabooTests.AgentAccess.\(UUID().uuidString)"
@@ -288,6 +359,25 @@ final class TaskStoreTests: XCTestCase {
         XCTAssertEqual(development.url.lastPathComponent, "development.store")
         XCTAssertNil(production.cloudKitContainerIdentifier)
         XCTAssertNil(development.cloudKitContainerIdentifier)
+    }
+
+    func testCloudSyncRequiresTheConfiguredContainerAndServiceEntitlements() {
+        XCTAssertTrue(PersistenceController.supportsCloudSync(
+            containers: [PersistenceController.cloudKitContainerIdentifier],
+            services: ["CloudKit"]
+        ))
+        XCTAssertFalse(PersistenceController.supportsCloudSync(
+            containers: nil,
+            services: ["CloudKit"]
+        ))
+        XCTAssertFalse(PersistenceController.supportsCloudSync(
+            containers: [PersistenceController.cloudKitContainerIdentifier],
+            services: nil
+        ))
+        XCTAssertFalse(PersistenceController.supportsCloudSync(
+            containers: ["iCloud.example.OtherApp"],
+            services: ["CloudKit"]
+        ))
     }
 
     @MainActor

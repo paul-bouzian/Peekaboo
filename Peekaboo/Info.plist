@@ -40,7 +40,7 @@
 			<key>UTTypeDescription</key>
 			<string>Peekaboo Task Identifier</string>
 			<key>UTTypeIdentifier</key>
-			<string>com.emanueledipietro.peekaboo.task-id</string>
+			<string>com.paulbouzian.peekaboo.task-id</string>
 		</dict>
 	</array>
 </dict>

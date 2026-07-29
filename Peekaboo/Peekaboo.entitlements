@@ -19,7 +19,7 @@
 	</array>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
-		<string>iCloud.com.emanueledipietro.Peekaboo</string>
+		<string>iCloud.com.paulbouzian.Peekaboo</string>
 	</array>
 	<key>com.apple.developer.icloud-container-environment</key>
 	<string>$(ICLOUD_CONTAINER_ENVIRONMENT)</string>

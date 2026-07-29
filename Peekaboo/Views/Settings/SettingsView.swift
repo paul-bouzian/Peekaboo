@@ -223,6 +223,20 @@ struct SettingsView: View {
                 }
             }
 
+            if let message = settings.cloudSyncStartupInfoMessage {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Local storage", systemImage: "externaldrive.fill")
+                        .font(.headline)
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .help(message)
+                }
+            }
+
             aboutFooter
         }
         .padding(28)

@@ -30,6 +30,7 @@ final class AppSettings: ObservableObject {
     }
 
     @Published private(set) var cloudSyncStartupErrorMessage: String?
+    @Published private(set) var cloudSyncStartupInfoMessage: String?
 
     @Published var revealDelay: Double {
         didSet {
@@ -58,6 +59,7 @@ final class AppSettings: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         cloudSyncStartupErrorMessage = nil
+        cloudSyncStartupInfoMessage = nil
         corner = ScreenCorner(rawValue: defaults.string(forKey: Key.corner) ?? "") ?? .topRight
         let storedDelay = defaults.object(forKey: Key.revealDelay) as? Double
         var resolvedDelay = storedDelay ?? 0.2
@@ -112,7 +114,13 @@ final class AppSettings: ObservableObject {
     }
 
     func reportCloudSyncStartupFailure(_ message: String) {
+        cloudSyncStartupInfoMessage = nil
         cloudSyncStartupErrorMessage = message
+    }
+
+    func reportLocalOnlyCloudSync(_ message: String) {
+        cloudSyncStartupErrorMessage = nil
+        cloudSyncStartupInfoMessage = message
     }
 
     private static func clamp(_ value: Double, to range: ClosedRange<Double>) -> Double {

@@ -8,9 +8,14 @@ sync-related change unless every invariant and release check below remains true.
 
 ### Mandatory identifiers and environments
 
-- Both targets MUST use bundle identifier `com.emanueledipietro.Peekaboo`.
+- Both targets MUST use bundle identifier `com.paulbouzian.Peekaboo`.
 - Both targets MUST use CloudKit container
-  `iCloud.com.emanueledipietro.Peekaboo`.
+  `iCloud.com.paulbouzian.Peekaboo`.
+- Fork ownership note (2026-07-29): Paul Bouzian explicitly requested that
+  this fork move from the upstream author's Apple team and CloudKit container
+  to his own Apple Developer team (`9ZYQ4G954D`) and private container. This is
+  an intentional fork boundary; do not restore upstream signing identifiers
+  during merges.
 - Release/TestFlight builds MUST use CloudKit `Production` and production APNs.
 - Debug and Local builds MUST use CloudKit `Development` and development APNs.
 - `ICLOUD_CONTAINER_ENVIRONMENT` and `APS_ENVIRONMENT` MUST always describe the

@@ -33,8 +33,9 @@ final class AppCoordinator {
             || environment["XCTestBundlePath"] != nil
 
         let settings = AppSettings()
+        let cloudSyncEnabled = PersistenceController.isCloudSyncEntitled
         #if DEBUG
-        if !isUITesting && !isRunningTests {
+        if cloudSyncEnabled && !isUITesting && !isRunningTests {
             do {
                 try PersistenceController.initializeCloudKitDevelopmentSchemaIfNeeded()
             } catch {
@@ -48,8 +49,15 @@ final class AppCoordinator {
         let container: ModelContainer
         do {
             container = try PersistenceController.makeContainer(
-                inMemory: isUITesting || isRunningTests
+                inMemory: isUITesting || isRunningTests,
+                cloudSyncEnabled: cloudSyncEnabled
             )
+            if !cloudSyncEnabled && !isUITesting && !isRunningTests {
+                settings.reportLocalOnlyCloudSync(
+                    "This build is not entitled for CloudKit. "
+                        + "Peekaboo is running with local storage only."
+                )
+            }
         } catch let cloudError {
             do {
                 container = try PersistenceController.makeContainer(
@@ -97,6 +105,39 @@ final class AppCoordinator {
             uiState: uiState,
             store: store
         )
+
+        if !isUITesting && !isRunningTests {
+            let importer = LegacyTaskImporter(modelContainer: container)
+            Task { [settings, store] in
+                do {
+                    guard let result = try await importer.importIfPresent() else {
+                        return
+                    }
+                    if result.changedTaskCount > 0 {
+                        store.refresh()
+                        NSLog(
+                            "Imported %ld of %ld legacy task(s) into the "
+                                + "CloudKit-backed store",
+                            result.changedTaskCount,
+                            result.uniqueRecordCount
+                        )
+                    }
+                    if let archiveWarning = result.archiveWarning {
+                        NSLog(
+                            "Legacy task migration completed, but its payload "
+                                + "could not be archived: %@",
+                            archiveWarning
+                        )
+                    }
+                } catch {
+                    let nsError = error as NSError
+                    let diagnostic = "\(nsError.domain) (\(nsError.code)): "
+                        + "\(nsError.userInfo)"
+                    NSLog("Legacy task migration failed: %@", diagnostic)
+                    settings.reportCloudSyncStartupFailure(diagnostic)
+                }
+            }
+        }
     }
 
     func start() {
