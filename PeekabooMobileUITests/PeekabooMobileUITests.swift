@@ -88,6 +88,20 @@ final class PeekabooMobileUITests: XCTestCase {
         XCTAssertTrue(inProgressSection.waitForExistence(timeout: 3))
     }
 
+    func testLeadingStatusButtonAdvancesOneStepPerTap() throws {
+        addTask(named: "Advance me")
+
+        let moveToInProgress = app.buttons["Move to In Progress"]
+        XCTAssertTrue(moveToInProgress.waitForExistence(timeout: 3))
+        moveToInProgress.tap()
+
+        let markDone = app.buttons["Mark done"]
+        XCTAssertTrue(markDone.waitForExistence(timeout: 3))
+        markDone.tap()
+
+        XCTAssertTrue(app.buttons["Restore to To do"].waitForExistence(timeout: 3))
+    }
+
     private func addTask(named title: String, priority: String? = nil) {
         let addButton = app.buttons["add-task-button"]
         XCTAssertTrue(addButton.waitForExistence(timeout: 3))
