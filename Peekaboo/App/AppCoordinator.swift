@@ -33,8 +33,9 @@ final class AppCoordinator {
             || environment["XCTestBundlePath"] != nil
 
         let settings = AppSettings()
+        let cloudSyncEnabled = PersistenceController.isCloudSyncEntitled
         #if DEBUG
-        if !isUITesting && !isRunningTests {
+        if cloudSyncEnabled && !isUITesting && !isRunningTests {
             do {
                 try PersistenceController.initializeCloudKitDevelopmentSchemaIfNeeded()
             } catch {
@@ -48,8 +49,15 @@ final class AppCoordinator {
         let container: ModelContainer
         do {
             container = try PersistenceController.makeContainer(
-                inMemory: isUITesting || isRunningTests
+                inMemory: isUITesting || isRunningTests,
+                cloudSyncEnabled: cloudSyncEnabled
             )
+            if !cloudSyncEnabled && !isUITesting && !isRunningTests {
+                settings.reportCloudSyncStartupFailure(
+                    "This build is not entitled for CloudKit. "
+                        + "Peekaboo is running with local storage only."
+                )
+            }
         } catch let cloudError {
             do {
                 container = try PersistenceController.makeContainer(

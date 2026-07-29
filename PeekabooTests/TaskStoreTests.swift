@@ -290,6 +290,25 @@ final class TaskStoreTests: XCTestCase {
         XCTAssertNil(development.cloudKitContainerIdentifier)
     }
 
+    func testCloudSyncRequiresTheConfiguredContainerAndServiceEntitlements() {
+        XCTAssertTrue(PersistenceController.supportsCloudSync(
+            containers: [PersistenceController.cloudKitContainerIdentifier],
+            services: ["CloudKit"]
+        ))
+        XCTAssertFalse(PersistenceController.supportsCloudSync(
+            containers: nil,
+            services: ["CloudKit"]
+        ))
+        XCTAssertFalse(PersistenceController.supportsCloudSync(
+            containers: [PersistenceController.cloudKitContainerIdentifier],
+            services: nil
+        ))
+        XCTAssertFalse(PersistenceController.supportsCloudSync(
+            containers: ["iCloud.example.OtherApp"],
+            services: ["CloudKit"]
+        ))
+    }
+
     @MainActor
     func testFailedEditsRestorePersistedValues() throws {
         let gate = PersistenceGate()

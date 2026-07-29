@@ -1,5 +1,6 @@
 import Foundation
 import CoreData
+import Security
 import SwiftData
 
 enum PeekabooCloudKitEnvironment: String {
@@ -10,6 +11,33 @@ enum PeekabooCloudKitEnvironment: String {
 enum PersistenceController {
     static let cloudKitContainerIdentifier = "iCloud.com.emanueledipietro.Peekaboo"
     private static let cloudKitEnvironmentInfoKey = "PeekabooCloudKitEnvironment"
+
+    static var isCloudSyncEntitled: Bool {
+        #if os(macOS)
+        guard let task = SecTaskCreateFromSelf(nil) else { return false }
+        let containers = SecTaskCopyValueForEntitlement(
+            task,
+            "com.apple.developer.icloud-container-identifiers" as CFString,
+            nil
+        ) as? [String]
+        let services = SecTaskCopyValueForEntitlement(
+            task,
+            "com.apple.developer.icloud-services" as CFString,
+            nil
+        ) as? [String]
+        return supportsCloudSync(containers: containers, services: services)
+        #else
+        return true
+        #endif
+    }
+
+    static func supportsCloudSync(
+        containers: [String]?,
+        services: [String]?
+    ) -> Bool {
+        containers?.contains(cloudKitContainerIdentifier) == true
+            && services?.contains("CloudKit") == true
+    }
 
     #if DEBUG
     /// Kept alive for the rest of the process because Core Data may finish
