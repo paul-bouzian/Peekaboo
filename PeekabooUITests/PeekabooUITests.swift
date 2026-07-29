@@ -26,7 +26,11 @@ final class PeekabooUITests: XCTestCase {
             NSPredicate(format: "identifier BEGINSWITH %@", "task-row-")
         ).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 2))
-        row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)).doubleClick()
+        let moveToInProgress = app.buttons.matching(
+            NSPredicate(format: "label == %@", "Move to In Progress")
+        ).firstMatch
+        XCTAssertTrue(moveToInProgress.waitForExistence(timeout: 2))
+        moveToInProgress.click()
         let inProgressSection = app.staticTexts["task-section-inProgress"]
         XCTAssertTrue(inProgressSection.waitForExistence(timeout: 2))
 
