@@ -114,10 +114,12 @@ final class AppSettings: ObservableObject {
     }
 
     func reportCloudSyncStartupFailure(_ message: String) {
+        cloudSyncStartupInfoMessage = nil
         cloudSyncStartupErrorMessage = message
     }
 
     func reportLocalOnlyCloudSync(_ message: String) {
+        cloudSyncStartupErrorMessage = nil
         cloudSyncStartupInfoMessage = message
     }
 

@@ -59,6 +59,20 @@ final class TaskStoreTests: XCTestCase {
             "Local storage only"
         )
         XCTAssertNil(settings.cloudSyncStartupErrorMessage)
+
+        settings.reportCloudSyncStartupFailure("CloudKit unavailable")
+        XCTAssertEqual(
+            settings.cloudSyncStartupErrorMessage,
+            "CloudKit unavailable"
+        )
+        XCTAssertNil(settings.cloudSyncStartupInfoMessage)
+
+        settings.reportLocalOnlyCloudSync("Back to local storage")
+        XCTAssertEqual(
+            settings.cloudSyncStartupInfoMessage,
+            "Back to local storage"
+        )
+        XCTAssertNil(settings.cloudSyncStartupErrorMessage)
     }
 
     @MainActor
